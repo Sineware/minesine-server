@@ -1,0 +1,21 @@
+{
+  "name": "minesine-server",
+  "version": "1.0.0",
+  "description": "Sineware Cloud Minecraft Services - Universal Server Proxy",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Seshan Ravikumar",
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "glob": "^7.2.0",
+    "minecraft-data": "^2.113.0",
+    "minecraft-protocol": "^1.30.0",
+    "pg": "^8.7.3",
+    "pg-pubsub": "^0.6.1",
+    "queue": "^6.0.2",
+    "uuid": "^8.3.2"
+  }
+}
