@@ -248,8 +248,11 @@ function joinClientToRemoteServer(client, host) {
     });
 
     // Proxy user --> server
-    client.on('packet', function (data, meta) {
+    client.on("packet", (data, meta, buf, fullBuf) => {
         qlength = q.push(async () => {
+            // If we modify a packet, write deserialized object instead of buffer.
+            let packetModified = false;
+
             if(meta.name === "custom_payload") {
                 console.log("user to server")
                 console.log(data.data.toString());
@@ -258,13 +261,20 @@ function joinClientToRemoteServer(client, host) {
             if(meta.name === "chat" && data.message.startsWith("/sw"))
                 return; // Already handled, don't pass through to the remote server.
             if (virtualClient.state === mc.states.PLAY && meta.state === mc.states.PLAY) {
-                virtualClient.write(meta.name, data);
+                if(packetModified) {
+                    virtualClient.write(meta.name, data);
+                } else {
+                    virtualClient.writeRaw(fullBuf);
+                }
             }
         });
     });
     // proxy server --> user
-    virtualClient.on('packet', function (data, meta) {
+    virtualClient.on("packet", (data, meta, buf, fullBuf) => {
         qlength = q.push(async () => {
+            // If we modify a packet, write deserialized object instead of buffer.
+            let packetModified = false;
+
             if(meta.name === "custom_payload") {
                 // todo we cant actually check the channel this way, only contents
                 let channelMsg = data.data.toString("ascii").split("\x00").slice(1);
@@ -284,6 +294,7 @@ function joinClientToRemoteServer(client, host) {
                         }
                     }
                 }
+                packetModified = true;
             }
             if (meta.state === mc.states.PLAY && client.state === mc.states.PLAY) {
                 // Intercept UUID (offline servers) for Hub
@@ -310,9 +321,14 @@ function joinClientToRemoteServer(client, host) {
                                 }));
                         }
                     }
-                    //console.log(JSON.stringify(data, null, 2));
+                    packetModified = true;
                 }
-                client.write(meta.name, data);
+                // Write out the packet to the client!
+                if(packetModified) {
+                    client.write(meta.name, data);
+                } else {
+                    client.writeRaw(fullBuf);
+                }
                 if (meta.name === "set_compression") // Set compression
                     client.compressionThreshold = data.threshold;
             }

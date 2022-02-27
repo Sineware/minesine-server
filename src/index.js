@@ -44,7 +44,7 @@ const options = {
     motd: '\u00a78Mine\u00a73sine\u00a7r - \u00a7dSineware Cloud Minecraft Services\u00a7r            |  Cross-server chats, parties, and more!  |',
     'max-players': 127,
     port: 25565,
-    'online-mode': false,
+    'online-mode': true,
     keepAlive: false,
     version: config.version,
     favicon: favicon.base64
