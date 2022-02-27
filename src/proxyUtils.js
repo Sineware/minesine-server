@@ -157,14 +157,14 @@ function joinClientToRemoteServer(client, host) {
                 });
             },
             keepAlive: false,
-            version: config.version
+            version: client.version
         }) : mc.createClient({
             host: hostOnly,
             port: port ?? 25565,
             username: client.username, // Hub is "offline" by default (auth is already handled if you are connected)
             auth: 'mojang',
             keepAlive: false,
-            version: config.version
+            version: client.version
         });
     } catch (e) {
         console.log("Failed to create virtualClient (exception caught) for " + client.username);
@@ -217,7 +217,7 @@ function joinClientToRemoteServer(client, host) {
                 console.log("virtualClient logged in for " + virtualClient.username + " to " + host);
                 console.log("Setting offline uuid " + virtualClient.uuid);
                 const { dimension, worldName, hashedSeed, previousGamemode, isDebug, isFlat, gameMode: gamemode } = data;
-                client.write('login', data);
+                // place user in the respawn state
                 client.write('respawn', {
                     dimension,
                     worldName,
@@ -226,7 +226,7 @@ function joinClientToRemoteServer(client, host) {
                     previousGamemode,
                     isDebug,
                     isFlat,
-                    copyMetadata: true
+                    copyMetadata: false
                 });
                 // Update DB
                 await db.query("UPDATE minesine_users SET offline_uuid=$1,client_properties=$2,current_server=$3 WHERE uuid=$4", [virtualClient.uuid, JSON.stringify(client.profile.properties), host, client.uuid]);

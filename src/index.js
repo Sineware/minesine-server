@@ -56,7 +56,7 @@ State.server = server;
 server.on('login', async function (client) {
     q.push(async () => {
         const addr = client.socket.remoteAddress + ':' + client.socket.remotePort
-        console.log(client.username + ' connected', '(' + addr + ')')
+        console.log(client.username + ' connected', '(' + addr + ') version' + client.version)
 
         if(client.socket.remoteAddress === undefined) {
             // Bail, the client probably crashed.
