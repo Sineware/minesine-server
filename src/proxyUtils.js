@@ -251,9 +251,13 @@ function joinClientToRemoteServer(client, host) {
     client.on("packet", (data, meta, buf, fullBuf) => {
         qlength = q.push(async () => {
             if(meta.name === "custom_payload") {
-                console.log("user to server")
-                console.log(data.data.toString());
-                console.log(meta);
+                console.log("custom_payload user to server: ")
+                console.log(data);
+                // modify brand to include minesine
+                if(data.channel === "minecraft:brand") {
+                    console.log("brand: " + data.data.toString()); 
+                    // todo
+                }
             }
             if(meta.name === "chat" && data.message.startsWith("/sw"))
                 return; // Already handled, don't pass through to the remote server.
@@ -266,22 +270,30 @@ function joinClientToRemoteServer(client, host) {
     virtualClient.on("packet", (data, meta, buf, fullBuf) => {
         qlength = q.push(async () => {
             if(meta.name === "custom_payload") {
+                console.log("custom_payload server to user: ")
+                console.log(data);
                 try {
-                    // todo we cant actually check the channel this way, only contents
-                    let channelMsg = data.data.toString("ascii").split("\x00").slice(1);
-                    console.log(channelMsg);
-                    if(channelMsg.length !== 0) {
-                        // todo THIS IS VERY HACKY, DO SOMETHING PROPERLY LATER!!
-                        let bungeeCommand = channelMsg[0].substring(1);
-                        let bungeeValue = channelMsg[1].substring(1);
-                        console.log("Command: " + bungeeCommand + ", value: " + bungeeValue);
-                        switch(bungeeCommand) {
-                            case "Connect": {
-                                if(getClientState(client.uuid).username === null) { // username is email
-                                    sendChatMessageToClient(client, "You are not logged in yet! Use \"/sw auth EMAIL\" to get started.");
-                                    return;
+                    if(data.channel === "minecraft:brand") {
+                        // modify server brand to include minesine
+                        // todo
+                    } else {
+                        // Respond to bungee connect message
+                        // todo we cant actually check the channel this way, only contents
+                        let channelMsg = data.data.toString("ascii").split("\x00").slice(1);
+                        console.log(channelMsg);
+                        if(channelMsg.length !== 0) {
+                            // todo THIS IS VERY HACKY, DO SOMETHING PROPERLY LATER!!
+                            let bungeeCommand = channelMsg[0].substring(1);
+                            let bungeeValue = channelMsg[1].substring(1);
+                            console.log("Command: " + bungeeCommand + ", value: " + bungeeValue);
+                            switch(bungeeCommand) {
+                                case "Connect": {
+                                    if(getClientState(client.uuid).username === null) { // username is email
+                                        sendChatMessageToClient(client, "You are not logged in yet! Use \"/sw auth EMAIL\" to get started.");
+                                        return;
+                                    }
+                                    joinClientToRemoteServer(getClientState(client.uuid).mcClient, bungeeValue);
                                 }
-                                joinClientToRemoteServer(getClientState(client.uuid).mcClient, bungeeValue);
                             }
                         }
                     }

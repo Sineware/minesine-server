@@ -30,7 +30,7 @@ const config = require("./config.json");
 const favicon = require("./misc/favicon.json")
 let State = require("./state");
 const {broadcast, joinClientToRemoteServer, sendChatMessageToClient} = require("./proxyUtils");
-const {updateClientState, getClientState} = require("./stateUtils");
+const {updateClientState, getClientState, getListOfClients} = require("./stateUtils");
 const db = require('./db');
 const {registerPubSubHandler, pubsubInstance} = require("./db/pubSubHandler");
 const {handlePartyCommand} = require("./parties");
@@ -135,6 +135,7 @@ server.on('login', async function (client) {
         // todo move out commands to their own files/folders
         client.on('chat', async function (data) {
             if(data.message.startsWith("/sw")) {
+                console.log(client.username + ": " + data.message);
                 let args = data.message.split(" ");
                 switch(args[1]) {
                     case "hub": {
@@ -229,6 +230,7 @@ server.on('login', async function (client) {
                         } else {
                             let uuid = uuidRes.rows[0].uuid;
                             await pubsubInstance.publish('chat_dm', { fromUuid: client.uuid, fromUsername: client.username, toUuid: uuid, msg: args.slice(3).join(" ") });
+                            sendChatMessageToClient(client, "me -> " + args[2] + ": " + args.slice(3).join(" "));
                         }
                         break;
                     }
@@ -274,6 +276,56 @@ server.on('login', async function (client) {
                         sendChatMessageToClient(client, JSON.stringify(debugInfo, null, 2));
                         break;
                     }
+                    case "ping": {
+                        if(args.length <= 2) {
+                            sendChatMessageToClient(client, "Usage: /sw ping SERVER_IP [PORT]");
+                            return;
+                        }
+                        try {
+                            let port = null;
+                            let hostOnly;
+                            let portSplit = args[2].split(":");
+                            if(portSplit.length > 1) {
+                                port = portSplit[1];
+                                hostOnly = portSplit[0];
+                                console.log(port);
+                            } else {
+                                hostOnly = args[2];
+                            }
+                            let serverInfo = await mc.ping({
+                                host: hostOnly,
+                                port: port ?? 25565
+                            });
+                            sendChatMessageToClient(client, "-- " + args[2] + " --");
+                            if(typeof serverInfo.description === "string") {
+                                sendChatMessageToClient(client, serverInfo.description);
+                            } else {
+                                sendChatMessageToClient(client, {
+                                    text: "",
+                                    extra: serverInfo.description.extra
+                                });
+                            }
+                            
+                            sendChatMessageToClient(client, "Online: " + serverInfo.players.online + " / " + serverInfo.players.max);
+                            for(let p of serverInfo.players.sample) {
+                                sendChatMessageToClient(client, "    - " + p.name);
+                            }
+                            sendChatMessageToClient(client, "Server: " + serverInfo.version.name + " implementing " + serverInfo.version.protocol);
+                            sendChatMessageToClient(client, "Ping: " + serverInfo.latency + "ms");
+                        } catch(e) {
+                            sendChatMessageToClient(client, e.message);
+                            sendChatMessageToClient(client, "Could not ping that server! Is it online?");
+                        }
+                        break;
+                    } 
+                    case "list": {
+                        sendChatMessageToClient(client, "Players Online: " + server.playerCount);
+                        //console.log(getListOfClients())
+                        for(const p of getListOfClients()) {
+                            sendChatMessageToClient(client, "    - " + p.mcClient.username + " (" + (p.currentServer.startsWith(config.hub.host) ? "Minesine Hub" : p.currentServer)  + ")");
+                        }
+                        break;
+                    }
                     case "help":
                     default: {
                         let helpMsgs = [
@@ -289,6 +341,8 @@ server.on('login', async function (client) {
                             genHelpMessage("party disband", "Disband a party (if you are a leader)."),
                             genHelpMessage("party chat MESSAGE", "Send a DM to all party members."),
                             genHelpMessage("party join USER", "Accept a party invite from USER(name)."),
+                            genHelpMessage("ping SERVER", "Ping a server (get online users and server info)."),
+                            genHelpMessage("list", "List clients using Minesine."),
                         ];
                         sendChatMessageToClient(client, {
                             text: "Minesine Commands: \n",

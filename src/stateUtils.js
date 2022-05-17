@@ -13,7 +13,12 @@ function updateClientState(uuid, newState) {
     }
 }
 
+function getListOfClients() {
+    return Array.from(State.clients.values());
+}
+
 module.exports = {
     getClientState,
-    updateClientState
+    updateClientState,
+    getListOfClients
 }
