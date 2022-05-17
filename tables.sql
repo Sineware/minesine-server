@@ -11,7 +11,6 @@ create table minesine_users
     client_properties jsonb,
     party_uuid        uuid
 )
-    using ???;
 
 
 create table minesine_parties
@@ -23,7 +22,6 @@ create table minesine_parties
     invited_users uuid[],
     leader_uuid   uuid
 )
-    using ???;
 
 create unique index minesine_parties_leader_uuid_uindex
-    on minesine_parties using ??? (leader_uuid);
+    on minesine_parties (leader_uuid);

@@ -150,7 +150,7 @@ function joinClientToRemoteServer(client, host) {
                             text: " to authenticate."
                         },
                         {
-                            text: "!!! ",
+                            text: " !!! ",
                             color: "red"
                         }
                     ]
@@ -266,49 +266,60 @@ function joinClientToRemoteServer(client, host) {
     virtualClient.on("packet", (data, meta, buf, fullBuf) => {
         qlength = q.push(async () => {
             if(meta.name === "custom_payload") {
-                // todo we cant actually check the channel this way, only contents
-                let channelMsg = data.data.toString("ascii").split("\x00").slice(1);
-                console.log(channelMsg);
-                if(channelMsg.length !== 0) {
-                    // todo THIS IS VERY HACKY, DO SOMETHING PROPERLY LATER!!
-                    let bungeeCommand = channelMsg[0].substring(1);
-                    let bungeeValue = channelMsg[1].substring(1);
-                    console.log("Command: " + bungeeCommand + ", value: " + bungeeValue);
-                    switch(bungeeCommand) {
-                        case "Connect": {
-                            if(getClientState(client.uuid).username === null) { // username is email
-                                sendChatMessageToClient(client, "You are not logged in yet! Use \"/sw auth EMAIL\" to get started.");
-                                return;
+                try {
+                    // todo we cant actually check the channel this way, only contents
+                    let channelMsg = data.data.toString("ascii").split("\x00").slice(1);
+                    console.log(channelMsg);
+                    if(channelMsg.length !== 0) {
+                        // todo THIS IS VERY HACKY, DO SOMETHING PROPERLY LATER!!
+                        let bungeeCommand = channelMsg[0].substring(1);
+                        let bungeeValue = channelMsg[1].substring(1);
+                        console.log("Command: " + bungeeCommand + ", value: " + bungeeValue);
+                        switch(bungeeCommand) {
+                            case "Connect": {
+                                if(getClientState(client.uuid).username === null) { // username is email
+                                    sendChatMessageToClient(client, "You are not logged in yet! Use \"/sw auth EMAIL\" to get started.");
+                                    return;
+                                }
+                                joinClientToRemoteServer(getClientState(client.uuid).mcClient, bungeeValue);
                             }
-                            joinClientToRemoteServer(getClientState(client.uuid).mcClient, bungeeValue);
                         }
                     }
+                } catch (e) {
+                    console.error("An error occured reading custom_payload: ");
+                    console.trace(e);
                 }
+            
             }
             if (meta.state === mc.states.PLAY && client.state === mc.states.PLAY) {
                 // Intercept UUID (offline servers) for Hub
                 if(meta.name === "player_info" && host === config.hub.host + ":" + config.hub.port) {
-                    console.log("Player info data: ");
-                    console.log(data);
-                    for (const player of data.data) {
-                        let offlineUUID = player.UUID;
-                        let dbUser = (await db.query("SELECT uuid, client_properties FROM minesine_users WHERE offline_uuid=$1", [offlineUUID])).rows[0];
-                        console.log(dbUser)
-                        if(dbUser.uuid === client.uuid) {
-                            player.UUID = dbUser.uuid;
+                    try {
+                        console.log("Player info data: ");
+                        console.log(data);
+                        for (const player of data.data) {
+                            let offlineUUID = player.UUID;
+                            let dbUser = (await db.query("SELECT uuid, client_properties FROM minesine_users WHERE offline_uuid=$1", [offlineUUID])).rows[0];
+                            console.log(dbUser)
+                            if(dbUser.uuid === client.uuid) {
+                                player.UUID = dbUser.uuid;
+                            }
+                            if(data.action === 0) {
+                                console.log(player)
+                                console.log("UUID of offline to online: ");
+                                console.log(dbUser.uuid);
+                                player.properties = dbUser.client_properties
+                                    .map(property => ({
+                                        name:property.name,
+                                        value:property.value,
+                                        isSigned:true,
+                                        signature:property.signature
+                                    }));
+                            }
                         }
-                        if(data.action === 0) {
-                            console.log(player)
-                            console.log("UUID of offline to online: ");
-                            console.log(dbUser.uuid);
-                            player.properties = dbUser.client_properties
-                                .map(property => ({
-                                    name:property.name,
-                                    value:property.value,
-                                    isSigned:true,
-                                    signature:property.signature
-                                }));
-                        }
+                    } catch(e) {
+                        console.error("An error occurred mapping skins onto offline UUIDs for the hub server!");
+                        console.trace(e);
                     }
                 }
                 client.write(meta.name, data);
@@ -321,8 +332,8 @@ function joinClientToRemoteServer(client, host) {
 }
 
 q.on("error", (e) => {
-   console.log("An error occurred in the packet processing queue: ");
-   console.log(e);
+   console.error("An error occurred in the packet processing queue: ");
+   console.trace(e);
 });
 
 module.exports = {

@@ -1,7 +1,7 @@
 # Sineware Labs *Minesine Metaserver*
 Minesine is a "metaserver". It is designed to let you connect to any public Minecraft through it.
 
-**The public Minesine instance is available at: `mc.sineware.ca`** (1.18.1 only)
+**The public Minesine instance is available at: `mc.sineware.ca`** (1.18.2 only)
 ![Minesine in the Minecraft Server list](docs/mc-list.png)
 
 This allows for useful features, for example, quickly hopping between servers, being able to create a party of players and have the 
