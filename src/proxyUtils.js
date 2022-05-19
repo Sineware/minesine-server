@@ -6,6 +6,15 @@ const {registerChannelHandler} = require("./channels/channelHandler");
 const db = require("./db");
 const queue = require("queue");
 const pubsubInstance = require("./db/pubsubInstance");
+const { setSyntheticTrailingComments } = require("typescript");
+
+// Packet processing middleware
+const userToServerFunctions = [
+    require("./misc/signEditor")
+];
+const serverToUserFunctions = [
+
+]
 
 // The packet processing queue ensures packets are processed in order
 let q = queue({ autostart: true, concurrency: 1, timeout: 5000 });
@@ -247,7 +256,7 @@ function joinClientToRemoteServer(client, host) {
         });
     });
 
-    // Proxy user --> server
+    // ~~~~~~~~ Proxy user --> server 
     client.on("packet", (data, meta, buf, fullBuf) => {
         qlength = q.push(async () => {
             if(meta.name === "custom_payload") {
@@ -261,12 +270,17 @@ function joinClientToRemoteServer(client, host) {
             }
             if(meta.name === "chat" && data.message.startsWith("/sw"))
                 return; // Already handled, don't pass through to the remote server.
+
+            // Run each middleware function
+            for(const f of userToServerFunctions)
+                await f(data, meta);
+            
             if (virtualClient.state === mc.states.PLAY && meta.state === mc.states.PLAY) {
                 virtualClient.write(meta.name, data);
             }
         });
     });
-    // proxy server --> user
+    // ~~~~~~~~ proxy server --> user ~~~~~~~~
     virtualClient.on("packet", (data, meta, buf, fullBuf) => {
         qlength = q.push(async () => {
             if(meta.name === "custom_payload") {

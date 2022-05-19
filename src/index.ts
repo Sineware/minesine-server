@@ -17,9 +17,10 @@
  */
 
 // Vendor
+import * as crypto from "crypto";
+import { Client } from "minecraft-protocol";
 require('dotenv').config()
 const mc = require('minecraft-protocol');
-const crypto = require('crypto');
 const glob = require("glob");
 const os = require("os");
 const fs = require("fs");
@@ -35,10 +36,12 @@ const db = require('./db');
 const {registerPubSubHandler, pubsubInstance} = require("./db/pubSubHandler");
 const {handlePartyCommand} = require("./parties");
 
+// TODO add Sineware Cloud Services RT Messaging for Web Client.
+
 // The packet processing queue ensures packets are processed in order
 let q = queue({ autostart: true, concurrency: 1, timeout: 10000 });
 
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 const options = {
     motd: '\u00a78Mine\u00a73sine\u00a7r - \u00a7dSineware Cloud Minecraft Services\u00a7r            |  Cross-server chats, parties, and more!  |',
@@ -53,7 +56,7 @@ const options = {
 const server = mc.createServer(options);
 State.server = server;
 
-server.on('login', async function (client) {
+server.on('login', async function (client: Client) {
     q.push(async () => {
         const addr = client.socket.remoteAddress + ':' + client.socket.remotePort
         console.log(client.username + ' connected', '(' + addr + ') version' + client.version)
@@ -103,7 +106,7 @@ server.on('login', async function (client) {
             }
             // Update username
             await db.query("UPDATE minesine_users SET username=$1, online=true, current_server=$3 WHERE uuid=$2", [client.username, client.uuid, config.hub.host + ":" + config.hub.port]);
-        } catch (e) {
+        } catch (e: any) {
             console.log("A database error occurred for user: " + client.username);
             console.log(e);
             client.end("An error occurred, please contact us on Discord! (https://discord.gg/CKNwBmngxJ) Error: " + e.message);
@@ -166,13 +169,13 @@ server.on('login', async function (client) {
                         }
                         if(args[2] === "reset") {
                             // From https://github.com/PrismarineJS/prismarine-auth/blob/master/src/MicrosoftAuthFlow.js
-                            const sha1 = (data) => {
+                            const sha1 = (data: string) => {
                                 return crypto.createHash('sha1').update(data ?? '', 'binary').digest('hex')
                             }
                             const userHash = sha1(getClientState(client.uuid).username).substr(0, 6);
                             console.log(userHash);
                             // todo in the future we should override prismarine-auths caching system (ex. use longer hash)
-                            glob(os.homedir() + "/.minecraft/nmp-cache/"+ userHash + "*", options, async function (er, files) {
+                            glob(os.homedir() + "/.minecraft/nmp-cache/" + userHash + "*", options, async function (er: any, files: string[]) {
                                 for (let file of files) {
                                     console.log(file);
                                     fs.unlinkSync(file);
@@ -201,7 +204,7 @@ server.on('login', async function (client) {
                             });
                             try {
                                 await db.query("UPDATE minesine_users SET email=$1 WHERE uuid=$2", [args[2], client.uuid]);
-                            } catch (e) {
+                            } catch (e: any) {
                                 console.log("A database error occurred for user: " + client.username);
                                 console.log(e);
                                 sendChatMessageToClient("An error occurred, please contact us on Discord! Error: " + e.message);
@@ -312,7 +315,7 @@ server.on('login', async function (client) {
                             }
                             sendChatMessageToClient(client, "Server: " + serverInfo.version.name + " implementing " + serverInfo.version.protocol);
                             sendChatMessageToClient(client, "Ping: " + serverInfo.latency + "ms");
-                        } catch(e) {
+                        } catch(e: any) {
                             sendChatMessageToClient(client, e.message);
                             sendChatMessageToClient(client, "Could not ping that server! Is it online?");
                         }
@@ -362,8 +365,8 @@ server.on('login', async function (client) {
     });
 });
 
-server.on('error', function (error) {
-    console.log('Error:', error);
+server.on('error', function (error: any) {
+    console.log('Error: ', error);
 })
 
 server.on('listening', async function () {
@@ -384,7 +387,7 @@ server.on('listening', async function () {
     }, 600000);
 });
 
-const genHelpMessage = (cmd, desc) => {
+const genHelpMessage = (cmd: string, desc: string) => {
     return {
         text: "/sw " + cmd,
         underlined: false,

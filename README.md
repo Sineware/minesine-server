@@ -51,6 +51,8 @@ PGPASSWORD=
 PGDATABASE=
 ```
 
+`npm start` will run src/index.ts with ts-node.
+
 ## Todo
 - Test a TCP load balancer (ex. HAProxy)
 - Implement the accounts manager
