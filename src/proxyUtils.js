@@ -13,7 +13,7 @@ const userToServerFunctions = [
     require("./misc/signEditor")
 ];
 const serverToUserFunctions = [
-
+    require("./misc/fakeOpLevel")
 ]
 
 // The packet processing queue ensures packets are processed in order
@@ -221,6 +221,7 @@ function joinClientToRemoteServer(client, host) {
     });
     virtualClient.on('login', (data, meta) => {
         console.log("login event for " + client.username);
+        
         qlength = q.push(async () => {
             if(!getClientState(client.uuid).isLoggedIn) { // Target servers may send additional login events when switching servers/worlds
                 console.log("virtualClient logged in for " + virtualClient.username + " to " + host);
@@ -348,6 +349,11 @@ function joinClientToRemoteServer(client, host) {
                         console.trace(e);
                     }
                 }
+
+                // Run each middleware function
+                for(const f of serverToUserFunctions)
+                    await f(data, meta);
+
                 client.write(meta.name, data);
                 if (meta.name === "set_compression") // Set compression
                     client.compressionThreshold = data.threshold;
