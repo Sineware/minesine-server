@@ -1,10 +1,10 @@
 const State = require("./state");
 
-function getClientState(uuid) {
+function getClientState(uuid: string) {
     return State.clients.get(uuid);
 }
 
-function updateClientState(uuid, newState) {
+function updateClientState(uuid: string, newState: object) {
     if(!State.clients.has(uuid)) {
         State.clients.set(uuid, newState);
     } else {

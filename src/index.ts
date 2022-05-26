@@ -19,6 +19,7 @@
 // Vendor
 import * as crypto from "crypto";
 import { Client } from "minecraft-protocol";
+import { MinesineClient } from "./state";
 require('dotenv').config()
 const mc = require('minecraft-protocol');
 const glob = require("glob");
@@ -76,7 +77,7 @@ server.on('login', async function (client: Client) {
             username: null, // Microsoft account email
             password: null, // mojang account password (no longer used)
             windowOpen: false // is the inventory window gui open (intercept window/slot events)
-        });
+        } as MinesineClient);
         console.log("Initialized local client state object");
         // Welcome Message
         sendChatMessageToClient(client,{

@@ -1,6 +1,6 @@
 import { PacketMeta } from "minecraft-protocol"
 
-async function handleSignPackets(data: any, meta: PacketMeta): Promise<void> {
+async function handlePacket(data: any, meta: PacketMeta): Promise<void> {
     // todo: change this to a toggle
     if(meta.name === "entity_status") {
         if(data.entityStatus == 24) {
@@ -10,4 +10,4 @@ async function handleSignPackets(data: any, meta: PacketMeta): Promise<void> {
     }
 }
 
-module.exports = handleSignPackets
+module.exports = handlePacket
