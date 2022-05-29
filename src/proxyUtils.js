@@ -6,14 +6,15 @@ const {registerChannelHandler} = require("./channels/channelHandler");
 const db = require("./db");
 const queue = require("queue");
 const pubsubInstance = require("./db/pubsubInstance");
-const { setSyntheticTrailingComments } = require("typescript");
+const { setSyntheticTrailingComments, textSpanContainsPosition } = require("typescript");
 
 // Packet processing middleware
 const userToServerFunctions = [
     require("./misc/signEditor")
 ];
 const serverToUserFunctions = [
-    require("./misc/fakeOpLevel")
+    require("./misc/fakeOpLevel"),
+    require("./misc/increaseViewDistance")
 ]
 
 // The packet processing queue ensures packets are processed in order
@@ -273,8 +274,11 @@ function joinClientToRemoteServer(client, host) {
                 return; // Already handled, don't pass through to the remote server.
 
             // Run each middleware function
-            for(const f of userToServerFunctions)
-                await f(data, meta);
+            for(const f of userToServerFunctions) {
+                let res = await f(data, meta);
+                if(!res)
+                    return;
+            }
             
             if (virtualClient.state === mc.states.PLAY && meta.state === mc.states.PLAY) {
                 virtualClient.write(meta.name, data);
@@ -351,8 +355,11 @@ function joinClientToRemoteServer(client, host) {
                 }
 
                 // Run each middleware function
-                for(const f of serverToUserFunctions)
-                    await f(data, meta);
+                for(const f of serverToUserFunctions) {
+                    let res = await f(data, meta);
+                    if(!res)
+                        return;
+                }
 
                 client.write(meta.name, data);
                 if (meta.name === "set_compression") // Set compression
