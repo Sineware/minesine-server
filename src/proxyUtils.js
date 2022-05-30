@@ -14,7 +14,8 @@ const userToServerFunctions = [
 ];
 const serverToUserFunctions = [
     require("./misc/fakeOpLevel"),
-    require("./misc/increaseViewDistance")
+    require("./misc/increaseViewDistance"),
+    require("./misc/signEditor")
 ]
 
 // The packet processing queue ensures packets are processed in order
@@ -275,7 +276,7 @@ function joinClientToRemoteServer(client, host) {
 
             // Run each middleware function
             for(const f of userToServerFunctions) {
-                let res = await f(data, meta);
+                let res = await f(data, meta, "SERVER", () => getClientState(client.uuid), (newState) => updateClientState(client.uuid, newState));
                 if(!res)
                     return;
             }
@@ -356,7 +357,7 @@ function joinClientToRemoteServer(client, host) {
 
                 // Run each middleware function
                 for(const f of serverToUserFunctions) {
-                    let res = await f(data, meta);
+                    let res = await f(data, meta, "CLIENT", () => getClientState(client.uuid), (newState) => updateClientState(client.uuid, newState));
                     if(!res)
                         return;
                 }

@@ -8,7 +8,9 @@ export type MinesineClient = {
     isLoggedIn: boolean,
     username: string | null,
     password: string | null, 
-    windowOpen: boolean
+    windowOpen: boolean,
+    lastSign: object | undefined,
+    cloneLastSign: boolean | undefined
 }
 class State {
     clients = new Map<string, MinesineClient>();

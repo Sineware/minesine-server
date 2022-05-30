@@ -321,7 +321,17 @@ server.on('login', async function (client: Client) {
                             sendChatMessageToClient(client, "Could not ping that server! Is it online?");
                         }
                         break;
-                    } 
+                    }
+                    case "clonesign": {
+                        if(!getClientState(client.uuid).cloneLastSign) {
+                            sendChatMessageToClient(client, "Cloning enabled. Signs you place next will be copies of your last placed sign.");
+                            updateClientState(client.uuid, {cloneLastSign: true});
+                        } else {
+                            sendChatMessageToClient(client, "Cloning disabled.");
+                            updateClientState(client.uuid, {cloneLastSign: false});
+                        }
+                        break;
+                    }
                     case "list": {
                         sendChatMessageToClient(client, "Players Online: " + server.playerCount);
                         //console.log(getListOfClients())
@@ -346,6 +356,7 @@ server.on('login', async function (client: Client) {
                             genHelpMessage("party chat MESSAGE", "Send a DM to all party members."),
                             genHelpMessage("party join USER", "Accept a party invite from USER(name)."),
                             genHelpMessage("ping SERVER", "Ping a server (get online users and server info)."),
+                            genHelpMessage("clonesign", "(toggle) Makes any sign you place have the contents of the last sign you placed."),
                             genHelpMessage("list", "List clients using Minesine."),
                         ];
                         sendChatMessageToClient(client, {
