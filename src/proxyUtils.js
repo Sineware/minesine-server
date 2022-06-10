@@ -6,7 +6,8 @@ const {registerChannelHandler} = require("./channels/channelHandler");
 const db = require("./db");
 const queue = require("queue");
 const pubsubInstance = require("./db/pubsubInstance");
-const { setSyntheticTrailingComments, textSpanContainsPosition } = require("typescript");
+
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 // Packet processing middleware
 const userToServerFunctions = [
@@ -82,7 +83,15 @@ function sendChatMessageToClient(client, msg) {
         sender: '0'
     });
 }
-function joinClientToRemoteServer(client, host) {
+
+async function joinClientToRemoteServer(client, host) {
+    qlength = q.push(async () => joinClientToRemoteServerInternal(client, host));
+    // todo cursed race condition when two people join at once
+    await sleep(4000);
+}
+
+
+function joinClientToRemoteServerInternal(client, host) {
     if(getClientState(client.uuid).username === null && host !== config.hub.host + ":" + config.hub.port) { // username is email
         console.log("Tried to connect, but was not authenticated.")
         sendChatMessageToClient(client, "You are not logged in yet! Use \"/sw auth EMAIL\" to get started.");
@@ -185,20 +194,22 @@ function joinClientToRemoteServer(client, host) {
 
     console.log("Ran createClient for " + client.username);
 
-    virtualClient.on("error", (e) => {
+    virtualClient.on("error", async (e) => {
         console.log("Failed to create virtualClient (error caught) for " + client.username);
         console.log(e);
         if(getClientState(client.uuid).isLoggedIn) {
             console.log("The user was logged in.");
-            sendChatMessageToClient(client, "An error occurred! You may have connected to a invalid server. Error: " + e);
-            sendChatMessageToClient(client, "If the problem persists, contact staff on Discord! (https://discord.gg/CKNwBmngxJ)");
+            
         } else {
             console.log("The user was not logged in.");
             // Probably failed to join hub
-            client.end("An error occurred, please contact us on Discord! (https://discord.gg/CKNwBmngxJ) Error: " + e);
+            //client.end("An error occurred, please contact us on Discord! (https://discord.gg/CKNwBmngxJ) Error: " + e);
         }
-       console.log();
-       console.log(e.message);
+        sendChatMessageToClient(client, "An error occurred! You may have connected to a invalid server. Error: " + e);
+        sendChatMessageToClient(client, "If the problem persists, contact staff on Discord! (https://discord.gg/CKNwBmngxJ)");
+        await sleep(4000);
+        await joinClientToRemoteServer(client, config.hub.host + ":" + config.hub.port);
+        console.log(e.message);
     });
 
     virtualClient.on('connect', () => {
@@ -312,7 +323,8 @@ function joinClientToRemoteServer(client, host) {
                                         sendChatMessageToClient(client, "You are not logged in yet! Use \"/sw auth EMAIL\" to get started.");
                                         return;
                                     }
-                                    joinClientToRemoteServer(getClientState(client.uuid).mcClient, bungeeValue);
+                                    await joinClientToRemoteServer(getClientState(client.uuid).mcClient, bungeeValue);
+                                    return;
                                 }
                             }
                         }

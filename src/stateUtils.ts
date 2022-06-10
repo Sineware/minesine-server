@@ -1,6 +1,8 @@
+import { MinesineClient } from "./state";
+
 const State = require("./state");
 
-function getClientState(uuid: string) {
+function getClientState(uuid: string): MinesineClient {
     return State.clients.get(uuid);
 }
 

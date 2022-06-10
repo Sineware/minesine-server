@@ -42,8 +42,6 @@ const {handlePartyCommand} = require("./parties");
 // The packet processing queue ensures packets are processed in order
 let q = queue({ autostart: true, concurrency: 1, timeout: 10000 });
 
-const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
-
 const options = {
     motd: '\u00a78Mine\u00a73sine\u00a7r - \u00a7dSineware Cloud Minecraft Services\u00a7r            |  Cross-server chats, parties, and more!  |',
     'max-players': 127,
@@ -112,10 +110,7 @@ server.on('login', async function (client: Client) {
             console.log(e);
             client.end("An error occurred, please contact us on Discord! (https://discord.gg/CKNwBmngxJ) Error: " + e.message);
         }
-
-        console.log("Finished initial database queries, about to join player to hub.");
-        // Join the hub server.
-        joinClientToRemoteServer(client, config.hub.host + ":" + config.hub.port);
+        console.log("Finished initial database queries");
 
         // User Client event handlers
         client.on('error', (e) => {
@@ -144,7 +139,7 @@ server.on('login', async function (client: Client) {
                 switch(args[1]) {
                     case "hub": {
                         sendChatMessageToClient(client, "Sending you to hub...");
-                        joinClientToRemoteServer(client, config.hub.host + ":" + config.hub.port);
+                        await joinClientToRemoteServer(client, config.hub.host + ":" + config.hub.port);
                         break;
                     }
                     case "join": {
@@ -158,7 +153,7 @@ server.on('login', async function (client: Client) {
                             return;
                         }
                         sendChatMessageToClient(client, "Sending you to " + args[2] + "");
-                        joinClientToRemoteServer(client, args[2], args[3]);
+                        await joinClientToRemoteServer(client, args[2], args[3]);
                         break;
                     }
                     case "auth": {
@@ -255,7 +250,7 @@ server.on('login', async function (client: Client) {
                             sendChatMessageToClient(client, "User not found or is not online!");
                         } else {
                             let currentServer = uuidRes.rows[0].current_server;
-                            joinClientToRemoteServer(client, currentServer);
+                            await joinClientToRemoteServer(client, currentServer);
 
                         }
                         break;
@@ -275,7 +270,9 @@ server.on('login', async function (client: Client) {
                             virtualClient: typeof clientState.virtualClient,
                             currentServer: clientState.currentServer,
                             isLoggedIn: clientState.isLoggedIn,
-                            username: clientState.username
+                            username: clientState.username,
+                            lastSign: clientState.lastSign,
+                            cloneLastSign: clientState.cloneLastSign
                         }
                         sendChatMessageToClient(client, JSON.stringify(debugInfo, null, 2));
                         break;
@@ -372,8 +369,9 @@ server.on('login', async function (client: Client) {
             console.log(message);
         });
 
-        // todo cursed race condition when two people join at once
-        await sleep(4000);
+        console.log("About to join player to hub: " + client.username);
+        // Join the hub server.
+        await joinClientToRemoteServer(client, config.hub.host + ":" + config.hub.port);
     });
 });
 
@@ -383,7 +381,8 @@ server.on('error', function (error: any) {
 
 server.on('listening', async function () {
     console.log('Server listening on port', server.socketServer.address().port);
-    await registerPubSubHandler()
+    await registerPubSubHandler();
+    console.log("Startup complete!");
     setInterval(() => {
         broadcast("You are connected to the Minesine Metaserver Beta.");
         broadcast({
