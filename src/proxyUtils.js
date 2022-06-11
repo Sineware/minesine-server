@@ -20,11 +20,12 @@ const serverToUserFunctions = [
 ]
 
 // The packet processing queue ensures packets are processed in order
-let q = queue({ autostart: true, concurrency: 1, timeout: 5000 });
+let qglobal = queue({ autostart: true, concurrency: 1, timeout: 5000 });
 let qlength = 0;
-setInterval(() => {
-    console.log("The current packet queue length is: " + qlength);
-}, 5000);
+/*setInterval(() => {
+    console.log("The current total packet queue length is: " + qlength);
+    qlength = 0;
+}, 5000);*/
 
 function broadcast (message, exclude, username) {
     let client
@@ -85,13 +86,18 @@ function sendChatMessageToClient(client, msg) {
 }
 
 async function joinClientToRemoteServer(client, host) {
-    qlength = q.push(async () => joinClientToRemoteServerInternal(client, host));
+    qlength = qglobal.push(async () => joinClientToRemoteServerInternal(client, host));
     // todo cursed race condition when two people join at once
     await sleep(4000);
 }
 
 
 function joinClientToRemoteServerInternal(client, host) {
+    let q = queue({ autostart: true, concurrency: 1, timeout: 5000 });
+    q.on("error", (e) => {
+        console.error("An error occurred in the packet processing queue for " + client.username + ": ");
+        console.trace(e);
+     });
     if(getClientState(client.uuid).username === null && host !== config.hub.host + ":" + config.hub.port) { // username is email
         console.log("Tried to connect, but was not authenticated.")
         sendChatMessageToClient(client, "You are not logged in yet! Use \"/sw auth EMAIL\" to get started.");
@@ -222,13 +228,15 @@ function joinClientToRemoteServerInternal(client, host) {
                 getClientState(client.uuid).virtualClient.end();
                 getClientState(client.uuid).virtualClient.removeAllListeners();
                 getClientState(client.uuid).virtualClient = null;
+                getClientState(client.uuid).q.end();
             }
             console.log("Updating client state on connect");
             // Update client state
             updateClientState(client.uuid, {
                 virtualClient: virtualClient, // set new virtualClient reference
                 currentServer: host,
-                isLoggedIn: false
+                isLoggedIn: false,
+                q: q
             });
         });
     });
@@ -282,6 +290,11 @@ function joinClientToRemoteServerInternal(client, host) {
                     // todo
                 }
             }
+
+            if(meta.name === "block_dig") {
+                console.log(data);
+            }
+
             if(meta.name === "chat" && data.message.startsWith("/sw"))
                 return; // Already handled, don't pass through to the remote server.
 
@@ -382,11 +395,6 @@ function joinClientToRemoteServerInternal(client, host) {
     });
     console.log("Registered all event listeners.");
 }
-
-q.on("error", (e) => {
-   console.error("An error occurred in the packet processing queue: ");
-   console.trace(e);
-});
 
 module.exports = {
     broadcast,

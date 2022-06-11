@@ -1,7 +1,8 @@
 # Sineware Labs *Minesine Metaserver*
+![Minesine Logo](docs/logo.png)
 Minesine is a "metaserver". It is designed to let you connect to any public Minecraft through it.
 
-**The public Minesine instance is available at: `mc.sineware.ca`** (1.18.2 only)
+## **The public Minesine instance is available at: `mc.sineware.ca`** (1.18.2 only)
 ![Minesine in the Minecraft Server list](docs/mc-list.png)
 
 This allows for useful features, for example, quickly hopping between servers, being able to create a party of players and have the 
@@ -9,13 +10,17 @@ party move between otherwise separate servers, DM messaging between players on d
 parsing and proxing game packets between the user and target server, by utilizing a virtual client connection. Minesine intercepts 
 certain packets on the fly to implement its features.
 
-Future goals include features such as server fast-switching (spawning multiple virtual clients).
+Future goals include features such as server fast-switching (spawning multiple virtual clients). Minesine allows users to have modded/tweaked experiences 
+without requiring any custom software. **Current tweaks include unlocking render distance limits, faking the client OP level (ex. allows F3+N/F3+F4 gammeode switching if the player has gamemode command permissions), and simple sign content cloning.**
+
 
 > Minesine is a Sineware Labs experiment designed to showcase Sineware Cloud Services technologies, such as network routing.
 
+## Player Usage
+![List of commands](docs/mc-cmds.png)
+
 ## For Server Administrators
-While Minesine was designed to be as transparent as possible (not altering packets between the user and the target server), 
-there are some things to keep in mind.
+Minesine is effectively a custom Minecraft client, and as such, players connected through Minesine may not behave like Vanilla/Notchian clients (especially when used tweaked experiences). In addtion:
 
 - Chat messages starting with the command "/sw" are caught and handled by Minesine, and are not passed through to the target server.
 - Users connected through Minesine will appear to be connected from the same few IP addresses. This is by design, and you should **not** use IP Bans. They are a weak security measure to begin with, and fail to address other real-world situations such as CGNAT.
@@ -28,9 +33,6 @@ obtaining the real IP of a player, etc.
 
 Supported Subchannel Commands:
 - Connect (where server name is a hostname)
-
-## Player Usage
-![List of commands](docs/mc-cmds.png)
 
 ## Development
 Terminology:
@@ -64,7 +66,7 @@ PGDATABASE=
 - external monitoring/cleanup db service (online users)
 - Bookmarks
 - Velocity Modern Player Forwarding (login_plugin_request)
-- debug logs
+- clean up debug logs
 - Multi-version support
 - Clear boss bars/titles/tab menu on server switch
 - dm reply (/sw dm r)

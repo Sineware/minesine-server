@@ -1,4 +1,5 @@
 import { Client } from "minecraft-protocol";
+import Queue from "queue";
 
 // Client States:
 export type MinesineClient = {
@@ -10,7 +11,8 @@ export type MinesineClient = {
     password: string | null, 
     windowOpen: boolean,
     lastSign: object | undefined,
-    cloneLastSign: boolean | undefined
+    cloneLastSign: boolean | undefined,
+    q: Queue
 }
 class State {
     clients = new Map<string, MinesineClient>();

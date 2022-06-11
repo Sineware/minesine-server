@@ -337,6 +337,13 @@ server.on('login', async function (client: Client) {
                         }
                         break;
                     }
+                    case "testbreak": {
+                        const clientState = getClientState(client.uuid) as MinesineClient;
+                        clientState.virtualClient?.write("block_dig", { status: 0, location: { x: 3, z: 48, y: 48 }, face: 4 });
+                        // 
+                        break;
+                    }
+
                     case "help":
                     default: {
                         let helpMsgs = [
