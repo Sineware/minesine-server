@@ -19,6 +19,7 @@
 // Vendor
 import * as crypto from "crypto";
 import { Client } from "minecraft-protocol";
+import abstractVersion from "./AbstractVersion";
 import { MinesineClient } from "./state";
 require('dotenv').config()
 const mc = require('minecraft-protocol');
@@ -43,14 +44,15 @@ const {handlePartyCommand} = require("./parties");
 let q = queue({ autostart: true, concurrency: 1, timeout: 10000 });
 
 const options = {
-    motd: '\u00a78Mine\u00a73sine\u00a7r - \u00a7dSineware Cloud Minecraft Services\u00a7r            |  Cross-server chats, parties, and more!  |',
+    motd: '\u00a78Mine\u00a73sine\u00a7r - \u00a7dSineware Cloud Services\u00a7r                        -> Minecraft Server Proxy',
     'max-players': 127,
     port: 25565,
     'online-mode': true,
     keepAlive: false,
-    version: config.version,
+    version: false,
     favicon: favicon.base64,
-    enforceSecureProfile: true
+    enforceSecureProfile: false,
+    validateChannelProtocol: false
 }
 
 const server = mc.createServer(options);
@@ -135,11 +137,12 @@ server.on('login', async function (client: Client) {
         });
 
         // todo move out commands to their own files/folders
-        client.on('chat_command', async function (data) {
+        client.on(abstractVersion(client).protocolCommand.name, async function (data) {
             console.log("chat ", data);
-            if(data.command.startsWith("sw")) {
-                console.log(client.username + ": " + data.command);
-                let args = data.command.split(" ");
+            let commandString = abstractVersion(client).protocolCommand.getString(data);
+            if(commandString.startsWith("sw") || commandString.startsWith("/sw")) {
+                console.log(client.username + ": " + commandString);
+                let args = commandString.split(" ");
                 switch(args[1]) {
                     case "hub": {
                         sendChatMessageToClient(client, "Sending you to hub...");

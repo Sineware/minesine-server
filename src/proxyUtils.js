@@ -6,6 +6,7 @@ const {registerChannelHandler} = require("./channels/channelHandler");
 const db = require("./db");
 const queue = require("queue");
 const pubsubInstance = require("./db/pubsubInstance");
+const abstractVersion = require("./abstractVersion")
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -52,36 +53,13 @@ function broadcast (message, exclude, username) {
                     message
                 ]
             }
-            client.write('chat', {
-                message: JSON.stringify(msg),
-                position: 0,
-                sender: '0'
-            })
+            abstractVersion(client).sendChatMessage(msg);
         }
     }
 }
 
 function sendChatMessageToClient(client, msg) {
-    const msgJSON = {
-        translate: "chat.type.announcement",
-        with: [
-            {
-                text: "Mine",
-                color: "dark_aqua",
-                extra: [
-                    {
-                        text: "sine",
-                        color: "dark_purple"
-                    }
-                ]
-            },
-            msg
-        ]
-    }
-    client.write('system_chat', {
-        content: JSON.stringify(msgJSON),
-        type: 1
-    });
+    abstractVersion(client).sendChatMessage(msg);
 }
 
 async function joinClientToRemoteServer(client, host) {
@@ -248,23 +226,13 @@ function joinClientToRemoteServerInternal(client, host) {
                 console.log("virtualClient logged in for " + virtualClient.username + " to " + host);
                 console.log("Setting offline uuid " + virtualClient.uuid);
                 console.log(data)
-                const { worldType: dimension, worldName, hashedSeed, previousGamemode, isDebug, isFlat, gameMode: gamemode } = data;
-                // place user in the respawn state
-                client.write('respawn', {
-                    worldName,
-                    dimension,
-                    hashedSeed,
-                    gamemode,
-                    previousGamemode,
-                    isDebug,
-                    isFlat,
-                    //death: undefined,
-                    copyMetadata: false
-                });
+                // Put the user in the respawn state
+                abstractVersion(client).respawn(data);
+
                 // Update DB
                 await db.query("UPDATE minesine_users SET offline_uuid=$1,client_properties=$2,current_server=$3 WHERE uuid=$4", [virtualClient.uuid, JSON.stringify(client.profile.properties), host, client.uuid]);
                 // Register Channel Handlers
-                //await registerChannelHandler(virtualClient);
+                await registerChannelHandler(virtualClient);
                 updateClientState(client.uuid, {isLoggedIn: true});
 
                 // Move party members
@@ -294,12 +262,12 @@ function joinClientToRemoteServerInternal(client, host) {
                 }
             }
 
-            if(meta.name === "block_dig") {
-                console.log(data);
-            }
-
-            if(meta.name === "chat_command" && data.command.startsWith("sw"))
-                return; // Already handled, don't pass through to the remote server.
+            //if(meta.name === "block_dig") {
+                //console.log(data);
+            //}
+            if(meta.name === abstractVersion(client).protocolCommand.name)
+                if(abstractVersion(client).protocolCommand.getString(data).startsWith("sw") || abstractVersion(client).protocolCommand.getString(data).startsWith("/sw"))
+                    return; // Already handled, don't pass through to the remote server.
 
             // Run each middleware function
             for(const f of userToServerFunctions) {
@@ -356,8 +324,8 @@ function joinClientToRemoteServerInternal(client, host) {
                 // Intercept UUID (offline servers) for Hub
                 if(meta.name === "player_info" && host === config.hub.host + ":" + config.hub.port) {
                     try {
-                        console.log("Player info data: ");
-                        console.log(data);
+                        //console.log("Player info data: ");
+                        //console.log(data);
                         for (const player of data.data) {
                             let offlineUUID = player.UUID;
                             let dbUser = (await db.query("SELECT uuid, client_properties FROM minesine_users WHERE offline_uuid=$1", [offlineUUID])).rows[0];
