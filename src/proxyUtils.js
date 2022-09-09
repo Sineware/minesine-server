@@ -78,10 +78,9 @@ function sendChatMessageToClient(client, msg) {
             msg
         ]
     }
-    client.write('chat', {
-        message: JSON.stringify(msgJSON),
-        position: 0,
-        sender: '0'
+    client.write('system_chat', {
+        content: JSON.stringify(msgJSON),
+        type: 1
     });
 }
 
@@ -242,27 +241,30 @@ function joinClientToRemoteServerInternal(client, host) {
     });
     virtualClient.on('login', (data, meta) => {
         console.log("login event for " + client.username);
+
         
         qlength = q.push(async () => {
             if(!getClientState(client.uuid).isLoggedIn) { // Target servers may send additional login events when switching servers/worlds
                 console.log("virtualClient logged in for " + virtualClient.username + " to " + host);
                 console.log("Setting offline uuid " + virtualClient.uuid);
-                const { dimension, worldName, hashedSeed, previousGamemode, isDebug, isFlat, gameMode: gamemode } = data;
+                console.log(data)
+                const { worldType: dimension, worldName, hashedSeed, previousGamemode, isDebug, isFlat, gameMode: gamemode } = data;
                 // place user in the respawn state
                 client.write('respawn', {
-                    dimension,
                     worldName,
+                    dimension,
                     hashedSeed,
                     gamemode,
                     previousGamemode,
                     isDebug,
                     isFlat,
+                    //death: undefined,
                     copyMetadata: false
                 });
                 // Update DB
                 await db.query("UPDATE minesine_users SET offline_uuid=$1,client_properties=$2,current_server=$3 WHERE uuid=$4", [virtualClient.uuid, JSON.stringify(client.profile.properties), host, client.uuid]);
                 // Register Channel Handlers
-                await registerChannelHandler(virtualClient);
+                //await registerChannelHandler(virtualClient);
                 updateClientState(client.uuid, {isLoggedIn: true});
 
                 // Move party members
@@ -280,6 +282,7 @@ function joinClientToRemoteServerInternal(client, host) {
 
     // ~~~~~~~~ Proxy user --> server 
     client.on("packet", (data, meta, buf, fullBuf) => {
+        
         qlength = q.push(async () => {
             if(meta.name === "custom_payload") {
                 console.log("custom_payload user to server: ")
@@ -295,7 +298,7 @@ function joinClientToRemoteServerInternal(client, host) {
                 console.log(data);
             }
 
-            if(meta.name === "chat" && data.message.startsWith("/sw"))
+            if(meta.name === "chat_command" && data.command.startsWith("sw"))
                 return; // Already handled, don't pass through to the remote server.
 
             // Run each middleware function
@@ -312,6 +315,7 @@ function joinClientToRemoteServerInternal(client, host) {
     });
     // ~~~~~~~~ proxy server --> user ~~~~~~~~
     virtualClient.on("packet", (data, meta, buf, fullBuf) => {
+        
         qlength = q.push(async () => {
             if(meta.name === "custom_payload") {
                 console.log("custom_payload server to user: ")

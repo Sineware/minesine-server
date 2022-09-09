@@ -49,7 +49,8 @@ const options = {
     'online-mode': true,
     keepAlive: false,
     version: config.version,
-    favicon: favicon.base64
+    favicon: favicon.base64,
+    enforceSecureProfile: true
 }
 
 const server = mc.createServer(options);
@@ -58,7 +59,7 @@ State.server = server;
 server.on('login', async function (client: Client) {
     q.push(async () => {
         const addr = client.socket.remoteAddress + ':' + client.socket.remotePort
-        console.log(client.username + ' connected', '(' + addr + ') version' + client.version)
+        console.log(client.username + ' connected', '(' + addr + ') version ' + client.version)
 
         if(client.socket.remoteAddress === undefined) {
             // Bail, the client probably crashed.
@@ -77,12 +78,14 @@ server.on('login', async function (client: Client) {
             windowOpen: false // is the inventory window gui open (intercept window/slot events)
         } as MinesineClient);
         console.log("Initialized local client state object");
+        
         // Welcome Message
         sendChatMessageToClient(client,{
             text: "~~ Minesine Metaserver ~~",
             bold: true,
             color: "dark_aqua"
         });
+        
         sendChatMessageToClient(client,"A Sineware Labs Experiment");
         sendChatMessageToClient(client,"Use the /sw command to get started!");
 
@@ -132,10 +135,11 @@ server.on('login', async function (client: Client) {
         });
 
         // todo move out commands to their own files/folders
-        client.on('chat', async function (data) {
-            if(data.message.startsWith("/sw")) {
-                console.log(client.username + ": " + data.message);
-                let args = data.message.split(" ");
+        client.on('chat_command', async function (data) {
+            console.log("chat ", data);
+            if(data.command.startsWith("sw")) {
+                console.log(client.username + ": " + data.command);
+                let args = data.command.split(" ");
                 switch(args[1]) {
                     case "hub": {
                         sendChatMessageToClient(client, "Sending you to hub...");
@@ -372,8 +376,6 @@ server.on('login', async function (client: Client) {
 
                 return;
             }
-            const message = '<' + client.username + '>' + ' ' + data.message;
-            console.log(message);
         });
 
         console.log("About to join player to hub: " + client.username);
@@ -390,7 +392,7 @@ server.on('listening', async function () {
     console.log('Server listening on port', server.socketServer.address().port);
     await registerPubSubHandler();
     console.log("Startup complete!");
-    setInterval(() => {
+    /*setInterval(() => {
         broadcast("You are connected to the Minesine Metaserver Beta.");
         broadcast({
             text: "Link your discord account and report bugs to: ",
@@ -402,7 +404,7 @@ server.on('listening', async function () {
                 },
             ]
         });
-    }, 600000);
+    }, 600000);*/
 });
 
 const genHelpMessage = (cmd: string, desc: string) => {
