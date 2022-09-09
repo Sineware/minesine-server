@@ -19,7 +19,7 @@
 // Vendor
 import * as crypto from "crypto";
 import { Client } from "minecraft-protocol";
-import abstractVersion from "./AbstractVersion";
+import abstractVersion from "./abstractVersion";
 import { MinesineClient } from "./state";
 require('dotenv').config()
 const mc = require('minecraft-protocol');
