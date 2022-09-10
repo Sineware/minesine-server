@@ -44,7 +44,7 @@ const {handlePartyCommand} = require("./parties");
 let q = queue({ autostart: true, concurrency: 1, timeout: 10000 });
 
 const options = {
-    motd: '\u00a78Mine\u00a73sine\u00a7r - \u00a7dSineware Cloud Services\u00a7r                        -> Minecraft Server Proxy',
+    motd: '\u00a78Mine\u00a73sine\u00a7r - \u00a7dSineware Cloud Services\u00a7r                        -> Minecraft Server Proxy (1.18.2/1.19)',
     'max-players': 127,
     port: 25565,
     'online-mode': true,
