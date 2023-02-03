@@ -283,8 +283,11 @@ function joinClientToRemoteServerInternal(client, host) {
     });
     // ~~~~~~~~ proxy server --> user ~~~~~~~~
     virtualClient.on("packet", (data, meta, buf, fullBuf) => {
-        
         qlength = q.push(async () => {
+            if(meta.name === "sound_effect") {
+                // todo
+                return;
+            }
             if(meta.name === "custom_payload") {
                 console.log("custom_payload server to user: ")
                 console.log(data);

@@ -44,15 +44,15 @@ const {handlePartyCommand} = require("./parties");
 let q = queue({ autostart: true, concurrency: 1, timeout: 10000 });
 
 const options = {
-    motd: '\u00a78Mine\u00a73sine\u00a7r - \u00a7dSineware Cloud Services\u00a7r                        -> Minecraft Server Proxy (1.18.2/1.19)',
+    motd: '\u00a78Mine\u00a73sine\u00a7r - \u00a7dSineware Cloud Services\u00a7r                        -> Minecraft Server Proxy (1.18.2/1.19.3)',
     'max-players': 127,
     port: 25565,
     'online-mode': true,
     keepAlive: false,
     version: false,
     favicon: favicon.base64,
-    enforceSecureProfile: false,
-    validateChannelProtocol: false
+    //enforceSecureProfile: false,
+    //validateChannelProtocol: false
 }
 
 const server = mc.createServer(options);

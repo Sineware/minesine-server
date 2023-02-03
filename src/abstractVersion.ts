@@ -20,6 +20,7 @@ export default function abstractVersion(client: Client): AbstractedClientFunctio
           }
         },
         respawn: (data: any) => {
+          console.log(data);
           const { dimension, worldName, hashedSeed, previousGamemode, isDebug, isFlat, gameMode: gamemode } = data;
           client.write('respawn', {
               dimension,
@@ -57,6 +58,7 @@ export default function abstractVersion(client: Client): AbstractedClientFunctio
         }
       }
     }
+    case 761:
     case 759: {
       // 1.19
       return {
@@ -104,7 +106,7 @@ export default function abstractVersion(client: Client): AbstractedClientFunctio
       }
     }
   }
-  throw new Error("Unsupported protocol version");
+  throw new Error("Unsupported protocol version " + client.protocolVersion);
 }
 
 module.exports = abstractVersion;
