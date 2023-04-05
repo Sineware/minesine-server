@@ -12,8 +12,8 @@
   "dependencies": {
     "dotenv": "^16.0.0",
     "glob": "^7.2.0",
-    "minecraft-data": "^3.26.0",
-    "minecraft-protocol": "^1.40.3",
+    "minecraft-data": "^3.31.0",
+    "minecraft-protocol": "^1.41.2",
     "pg": "^8.7.3",
     "pg-pubsub": "^0.6.1",
     "queue": "^6.0.2",
