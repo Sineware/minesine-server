@@ -51,7 +51,7 @@ const options = {
     keepAlive: false,
     version: false,
     favicon: favicon.base64,
-    //enforceSecureProfile: false,
+    enforceSecureProfile: true,
     //validateChannelProtocol: false
 }
 

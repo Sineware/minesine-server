@@ -57,10 +57,11 @@ export default function abstractVersion(client: Client): AbstractedClientFunctio
           });
         }
       }
-    }
+    } break;
     case 761:
     case 759: {
       // 1.19
+      //console.log("1.19 protocol detected");
       return {
         protocolCommand: {
           name: "chat_command",
@@ -105,6 +106,54 @@ export default function abstractVersion(client: Client): AbstractedClientFunctio
         }
       }
     }
+    case 763:
+    case 762: {
+      // 1.19.4
+      //console.log("1.19.4 protocol detected");
+      return {
+        protocolCommand: {
+          name: "chat_command",
+          getString: (data: any) => {
+            return data.command
+          }
+        },
+        respawn: (data: any) => {
+          const { worldType: dimension, worldName, hashedSeed, previousGamemode, isDebug, isFlat, gameMode: gamemode } = data;
+          client.write('respawn', {
+              worldName,
+              dimension,
+              hashedSeed,
+              gamemode,
+              previousGamemode,
+              isDebug,
+              isFlat,
+              copyMetadata: false
+          });
+        },
+        sendChatMessage: (msg) => {
+          const msgJSON = {
+            translate: "chat.type.announcement",
+            with: [
+                {
+                    text: "Mine",
+                    color: "dark_aqua",
+                    extra: [
+                        {
+                            text: "sine",
+                            color: "dark_purple"
+                        }
+                    ]
+                },
+                msg
+            ]
+          }
+          client.write('system_chat', {
+              content: JSON.stringify(msgJSON),
+              type: 1
+          });
+        }
+      }
+    } break;
   }
   throw new Error("Unsupported protocol version " + client.protocolVersion);
 }

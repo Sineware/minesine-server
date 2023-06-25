@@ -182,11 +182,16 @@ function joinClientToRemoteServerInternal(client, host) {
         console.log(e);
         if(getClientState(client.uuid).isLoggedIn) {
             console.log("The user was logged in.");
-            
+            // if in hub, return 
+            if(host === config.hub.host + ":" + config.hub.port) {
+                console.log("The user was in the hub, returning.");
+                return;
+            }
         } else {
             console.log("The user was not logged in.");
             // Probably failed to join hub
-            //client.end("An error occurred, please contact us on Discord! (https://discord.gg/CKNwBmngxJ) Error: " + e);
+            client.end("An error occurred, please contact us on Discord! (https://discord.gg/CKNwBmngxJ) Error: " + e);
+            return;
         }
         sendChatMessageToClient(client, "An error occurred! You may have connected to a invalid server. Error: " + e);
         sendChatMessageToClient(client, "If the problem persists, contact staff on Discord! (https://discord.gg/CKNwBmngxJ)");
@@ -277,17 +282,14 @@ function joinClientToRemoteServerInternal(client, host) {
             }
             
             if (virtualClient.state === mc.states.PLAY && meta.state === mc.states.PLAY) {
-                virtualClient.write(meta.name, data);
+                //virtualClient.write(meta.name, data);
+                virtualClient.writeRaw(buf)
             }
         });
     });
     // ~~~~~~~~ proxy server --> user ~~~~~~~~
     virtualClient.on("packet", (data, meta, buf, fullBuf) => {
         qlength = q.push(async () => {
-            if(meta.name === "sound_effect") {
-                // todo
-                return;
-            }
             if(meta.name === "custom_payload") {
                 console.log("custom_payload server to user: ")
                 console.log(data);
@@ -362,7 +364,19 @@ function joinClientToRemoteServerInternal(client, host) {
                         return;
                 }
 
-                client.write(meta.name, data);
+                try {
+                    //console.log("Sending packet to client: " + meta.name)
+                    if(meta.name === "custom_payload") {
+                        return;
+                    }
+                    if(meta.name === "sound_effect") {
+                        return;
+                    }
+                    client.write(meta.name, data);
+                } catch(e) {
+                    console.error("An error occurred writing to the client: ");
+                    console.trace(e);
+                }
                 if (meta.name === "set_compression") // Set compression
                     client.compressionThreshold = data.threshold;
             }
